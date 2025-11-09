@@ -49,15 +49,18 @@ class YouTubeScraper:
         videos = []
         print("📥 Fetching results...")
         for item in self.client.dataset(run["defaultDatasetId"]).iterate_items():
+            # Get subtitles, if not available use text (description content)
+            subtitles = item.get("subtitles") or item.get("text") or ""
+
             video_data = {
                 "video_id": item.get("id"),
                 "title": item.get("title"),
-                "description": item.get("description", ""),
+                "description": item.get("text", ""),  # Use 'text' field for full description
                 "url": item.get("url"),
-                "published_at": item.get("publishedAt"),
+                "published_at": item.get("date"),  # Changed from publishedAt to date
                 "duration": item.get("duration"),
                 "view_count": item.get("viewCount"),
-                "subtitles": item.get("subtitles", ""),
+                "subtitles": subtitles,
             }
             videos.append(video_data)
 

@@ -67,7 +67,7 @@ class GeminiRAG:
 
         # Create model with files for context
         self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-pro",
+            model_name="gemini-pro",  # Using stable gemini-pro model
             generation_config={
                 "temperature": 0.7,
                 "top_p": 0.95,
