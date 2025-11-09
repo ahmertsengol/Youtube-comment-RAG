@@ -27,8 +27,7 @@ wheels/
 *.egg
 
 # Transcripts
-transcripts/
-*.txt
+transcripts/*.txt
 
 # IDE
 .vscode/

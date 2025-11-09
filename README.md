@@ -19,6 +19,20 @@ A powerful RAG (Retrieval Augmented Generation) tool that scrapes YouTube channe
 
 ## Installation
 
+### Quick Setup (Recommended)
+
+```bash
+git clone <your-repo-url>
+cd Youtube-comment-RAG
+./setup.sh
+```
+
+Then edit `.env` with your API keys.
+
+For a detailed guide, see [QUICKSTART.md](QUICKSTART.md)
+
+### Manual Setup
+
 1. Clone the repository:
 ```bash
 git clone <your-repo-url>
@@ -81,10 +95,14 @@ Youtube-comment-RAG/
 ├── chat.py              # Standalone chat interface
 ├── youtube_scraper.py   # Apify YouTube scraper module
 ├── gemini_rag.py        # Gemini API RAG implementation
+├── cleanup.py           # Utility to clean up old transcripts
+├── examples.py          # Example queries and usage patterns
+├── setup.sh             # Automated setup script
 ├── requirements.txt     # Python dependencies
 ├── .env.example         # Environment variables template
 ├── .gitignore          # Git ignore file
 ├── transcripts/        # Saved video transcripts (auto-created)
+├── QUICKSTART.md       # Quick start guide
 └── README.md           # This file
 ```
 
@@ -134,6 +152,30 @@ Main orchestration script that:
 
 ### chat.py
 Standalone chat interface for querying existing transcripts.
+
+### cleanup.py
+Utility script to remove old transcript files. Run with:
+```bash
+python3 cleanup.py
+```
+
+### examples.py
+Shows example queries and usage patterns. Run with:
+```bash
+python3 examples.py
+```
+
+### setup.sh
+Automated setup script that:
+- Checks Python/pip installation
+- Installs dependencies
+- Creates .env file from template
+- Creates transcripts directory
+
+Run with:
+```bash
+./setup.sh
+```
 
 ## Troubleshooting
 
