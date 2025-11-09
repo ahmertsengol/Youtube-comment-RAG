@@ -67,7 +67,7 @@ class GeminiRAG:
 
         # Create model with files for context
         self.model = genai.GenerativeModel(
-            model_name="gemini-pro",  # Using stable gemini-pro model
+            model_name="models/gemini-2.5-flash",  # Using stable Gemini 2.5 Flash
             generation_config={
                 "temperature": 0.7,
                 "top_p": 0.95,
