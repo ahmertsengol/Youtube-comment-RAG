@@ -4,6 +4,7 @@ A RAG (Retrieval Augmented Generation) tool that scrapes YouTube channel videos,
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
 [![Gemini API](https://img.shields.io/badge/Gemini-API-orange.svg)](https://ai.google.dev/)
 
 ## Features
