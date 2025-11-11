@@ -1,4 +1,10 @@
 """Quick test script for the new transcript scraper."""
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from youtube_scraper import YouTubeScraper
 
 print("🧪 Testing YouTube Transcript Scraper")
@@ -18,15 +24,15 @@ print("-" * 80)
 video_data = scraper._scrape_single_video(test_video_url)
 
 if video_data:
-    print(f"\n✅ SUCCESS! Transcript fetched:")
+    print("\n✅ SUCCESS! Transcript fetched:")
     print(f"   - Video ID: {video_data['video_id']}")
     print(f"   - Title: {video_data['title']}")
     print(f"   - URL: {video_data['url']}")
     print(f"   - Transcript length: {len(video_data['transcript'])} characters")
-    print(f"\n   First 500 characters of transcript:")
-    print(f"   {'-' * 76}")
+    print("\n   First 500 characters of transcript:")
+    print("   " + "-" * 76)
     print(f"   {video_data['transcript'][:500]}...")
-    print(f"   {'-' * 76}")
+    print("   " + "-" * 76)
 else:
     print("\n❌ FAILED: No transcript found")
     print("This video might not have subtitles/captions available.")

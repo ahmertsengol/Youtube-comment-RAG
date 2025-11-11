@@ -6,6 +6,7 @@ from gemini_rag import GeminiRAG
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
+from rich.markdown import Markdown
 
 console = Console()
 
@@ -57,7 +58,17 @@ def main():
                     continue
 
                 response = rag.chat(query)
-                console.print(f"\n[bold green]AI Assistant[/bold green]:\n{response}\n")
+                
+                # Display response in a beautiful panel with markdown support
+                console.print("\n")
+                console.print(Panel(
+                    Markdown(response),
+                    title="[bold green]🤖 AI Assistant[/bold green]",
+                    border_style="green",
+                    padding=(1, 2),
+                    expand=False
+                ))
+                console.print()  # Empty line for spacing
 
             except KeyboardInterrupt:
                 console.print("\n\n[yellow]Interrupted. Exiting...[/yellow]")

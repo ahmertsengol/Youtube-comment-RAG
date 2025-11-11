@@ -1,214 +1,186 @@
 # YouTube Channel RAG Tool
 
-A powerful RAG (Retrieval Augmented Generation) tool that scrapes YouTube channel videos, extracts transcripts, and enables AI-powered chat interactions with the content using Google's Gemini API.
+YouTube kanallarından video transcript'lerini çekip, Google Gemini API ile AI destekli sohbet yapmanızı sağlayan bir RAG (Retrieval Augmented Generation) aracı.
 
-## Features
+## Özellikler
 
-- 🎥 Scrape videos from any YouTube channel using Apify
-- 📝 Extract video transcripts, titles, and metadata
-- 🤖 AI-powered chat interface using Gemini API with file search
-- 💾 Persistent transcript storage
-- 🔍 Intelligent search across all video content
-- 💬 Interactive chat interface to query video content
+- YouTube kanalından video listesi çekme (Apify kullanarak)
+- Video transcript'lerini otomatik çekme (ücretsiz YouTube Transcript API)
+- Transcript'leri Gemini API'ye yükleme ve AI ile arama
+- İnteraktif sohbet arayüzü ile video içeriği hakkında soru sorma
+- Transcript'leri yerel olarak kaydetme
 
-## Prerequisites
+## Gereksinimler
 
-- Python 3.8+
-- Gemini API key ([Get one here](https://aistudio.google.com/app/apikey))
-- Apify API token ([Get one here](https://console.apify.com/account/integrations))
+- Python 3.8 veya üzeri
+- Gemini API anahtarı: https://aistudio.google.com/app/apikey
+- Apify API token: https://console.apify.com/account/integrations (sadece kanal çekmek için gerekli)
 
-## Installation
+## Kurulum
 
-### Quick Setup (Recommended)
+### 1. Projeyi İndirin
 
 ```bash
-git clone <your-repo-url>
-cd Youtube-comment-RAG
-./setup.sh
-```
-
-Then edit `.env` with your API keys.
-
-For a detailed guide, see [QUICKSTART.md](QUICKSTART.md)
-
-### Manual Setup
-
-1. Clone the repository:
-```bash
-git clone <your-repo-url>
+git clone <repo-url>
 cd Youtube-comment-RAG
 ```
 
-2. Install dependencies:
+### 2. Bağımlılıkları Yükleyin
+
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
+veya virtual environment kullanarak:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. API Anahtarlarını Ayarlayın
+
+`.env` dosyası oluşturun:
+
 ```bash
 cp .env.example .env
 ```
 
-4. Edit `.env` and add your API keys:
-```env
+`.env` dosyasını düzenleyin ve API anahtarlarınızı ekleyin:
+
+```
 GEMINI_API_KEY=your_gemini_api_key_here
 APIFY_API_TOKEN=your_apify_api_token_here
 ```
 
-## Usage
+**Not:** Tek video testi için Apify token'ı gerekli değildir. Sadece kanal çekmek için gereklidir.
 
-### Option 1: Complete Workflow (Scrape + Chat)
+## Kullanım
 
-Run the main script to scrape videos and immediately start chatting:
+### Tam Akış (Çekme + Sohbet)
+
+Videoları çekip hemen sohbete başlamak için:
 
 ```bash
 python main.py
 ```
 
-You'll be prompted to:
-1. Enter the YouTube channel URL
-2. Specify how many videos to scrape (newest to oldest)
-3. Wait for scraping and indexing to complete
-4. Start chatting with the transcripts!
+Program sizden şunları isteyecek:
+1. YouTube kanal URL'i
+2. Kaç video çekileceği (en yeni videolardan başlayarak)
+3. Çekme ve indeksleme tamamlandıktan sonra sohbete başlayabilirsiniz
 
-Example:
+Örnek:
 ```
 Enter YouTube channel URL: https://www.youtube.com/@channelname
-How many videos to scrape: 20
+How many videos to scrape: 10
 ```
 
-### Option 2: Chat with Existing Transcripts
+### Mevcut Transcript'lerle Sohbet
 
-If you've already scraped videos and want to chat again:
+Daha önce çekilmiş transcript'lerle sohbet etmek için:
 
 ```bash
 python chat.py
 ```
 
-This will load existing transcripts from the `transcripts/` directory and start the chat interface.
+Bu komut `transcripts/` klasöründeki mevcut transcript'leri yükleyip sohbet arayüzünü başlatır.
 
-## Project Structure
+### Tek Video Testi
+
+Tek bir video ile test yapmak için (Apify token gerekmez):
+
+```bash
+python -m tests.test_transcript
+```
+
+veya
+
+```bash
+cd tests && python test_transcript.py && cd ..
+```
+
+## Proje Yapısı
 
 ```
 Youtube-comment-RAG/
-├── main.py              # Main orchestration script
-├── chat.py              # Standalone chat interface
-├── youtube_scraper.py   # Apify YouTube scraper module
-├── gemini_rag.py        # Gemini API RAG implementation
-├── cleanup.py           # Utility to clean up old transcripts
-├── examples.py          # Example queries and usage patterns
-├── setup.sh             # Automated setup script
-├── requirements.txt     # Python dependencies
-├── .env.example         # Environment variables template
-├── .gitignore          # Git ignore file
-├── transcripts/        # Saved video transcripts (auto-created)
-├── QUICKSTART.md       # Quick start guide
-└── README.md           # This file
+├── main.py                 # Ana orkestrasyon scripti
+├── chat.py                 # Bağımsız sohbet arayüzü
+├── youtube_scraper.py     # YouTube transcript çekme modülü
+├── gemini_rag.py          # Gemini API RAG implementasyonu
+├── requirements.txt        # Python bağımlılıkları
+├── setup.sh               # Otomatik kurulum scripti
+├── .env.example           # Ortam değişkenleri şablonu
+├── transcripts/           # Kaydedilen transcript'ler (otomatik oluşturulur)
+├── tests/                 # Test dosyaları
+│   ├── test_transcript.py
+│   ├── test_imports.py
+│   └── test_apify_config.py
+├── utils/                 # Yardımcı scriptler
+│   ├── cleanup.py
+│   ├── examples.py
+│   ├── debug_apify.py
+│   └── list_gemini_models.py
+└── docs/                  # Dokümantasyon
+    ├── KURULUM.md
+    ├── QUICKSTART.md
+    └── PR_DETAILS.md
 ```
 
-## How It Works
+## Nasıl Çalışır
 
-1. **Scraping**: Uses Apify's YouTube scraper to fetch video metadata and transcripts
-2. **Storage**: Saves each video's transcript with metadata to individual text files
-3. **Indexing**: Uploads transcripts to Gemini API for AI-powered search
-4. **Chat**: Provides an interactive interface to ask questions about the video content
+1. **Video Çekme**: Apify kullanarak YouTube kanalından video listesi çekilir
+2. **Transcript Çekme**: Her video için ücretsiz YouTube Transcript API kullanılarak transcript çekilir
+3. **Kaydetme**: Transcript'ler metadata ile birlikte `transcripts/` klasörüne kaydedilir
+4. **İndeksleme**: Transcript'ler Gemini API'ye yüklenir ve AI destekli arama için hazırlanır
+5. **Sohbet**: İnteraktif arayüz ile video içeriği hakkında sorular sorabilirsiniz
 
-## Example Questions
+## Örnek Sorular
 
-Once your transcripts are indexed, you can ask questions like:
+Transcript'ler indekslendikten sonra şu tür sorular sorabilirsiniz:
 
-- "What are the main topics covered in these videos?"
-- "Summarize the video about [specific topic]"
-- "What did the creator say about [topic]?"
-- "Find all mentions of [keyword]"
-- "Compare the approaches discussed in different videos"
+- "Bu videolarda hangi ana konular işleniyor?"
+- "[Belirli bir konu] hakkında ne söylenmiş?"
+- "[Anahtar kelime] hangi videolarda geçiyor?"
+- "Farklı videolarda bahsedilen yaklaşımları karşılaştır"
+- "Son videoda ne anlatılıyor?"
 
-## API Documentation
+## Sorun Giderme
 
-- **Apify YouTube Scraper**: [https://apify.com/streamers/youtube-scraper](https://apify.com/streamers/youtube-scraper)
-- **Gemini API File Search**: [https://ai.google.dev/gemini-api/docs/file-search](https://ai.google.dev/gemini-api/docs/file-search)
-- **Apify API Docs**: [https://docs.apify.com/](https://docs.apify.com/)
+### "APIFY_API_TOKEN not found" hatası
+`.env` dosyasında Apify token'ınızın olduğundan emin olun. Tek video testi için gerekli değildir.
 
-## Modules
+### "No transcript files found" hatası
+Önce `main.py` çalıştırarak videoları çekin veya `transcripts/` klasörünün var olduğundan emin olun.
+
+### "Error uploading files" hatası
+Gemini API anahtarınızın geçerli olduğunu ve yeterli kotanız olduğunu kontrol edin.
+
+### Rate Limit Hataları
+Her iki API'nin de rate limit'i vardır. Hata alırsanız:
+- Apify: Plan limitlerinizi kontrol edin
+- Gemini: Birkaç dakika bekleyin veya kotanızı kontrol edin
+
+## Maliyet
+
+- **Apify**: Ücretsiz tier sınırlı compute unit içerir. Fiyatlandırma: https://apify.com/pricing
+- **Gemini API**: Rate limit'li ücretsiz tier mevcuttur. Fiyatlandırma: https://ai.google.dev/pricing
+- **YouTube Transcript API**: Tamamen ücretsiz
+
+## Modüller
 
 ### youtube_scraper.py
-- `YouTubeScraper`: Main class for scraping YouTube channels
-- `scrape_channel()`: Scrapes videos from a channel
-- `save_transcripts()`: Saves transcripts to files
+- `YouTubeScraper`: YouTube kanallarından video çekme sınıfı
+- `scrape_channel()`: Kanaldan video çekme
+- `save_transcripts()`: Transcript'leri dosyalara kaydetme
 
 ### gemini_rag.py
-- `GeminiRAG`: RAG implementation using Gemini API
-- `upload_files()`: Uploads transcripts to Gemini
-- `chat()`: Query the RAG system
-- `delete_all_files()`: Clean up uploaded files
+- `GeminiRAG`: Gemini API kullanan RAG implementasyonu
+- `upload_files()`: Transcript'leri Gemini'ye yükleme
+- `chat()`: RAG sistemini sorgulama
+- `delete_all_files()`: Yüklenen dosyaları temizleme
 
-### main.py
-Main orchestration script that:
-1. Prompts for channel URL and video count
-2. Scrapes videos using Apify
-3. Saves transcripts locally
-4. Uploads to Gemini API
-5. Starts interactive chat
-
-### chat.py
-Standalone chat interface for querying existing transcripts.
-
-### cleanup.py
-Utility script to remove old transcript files. Run with:
-```bash
-python3 cleanup.py
-```
-
-### examples.py
-Shows example queries and usage patterns. Run with:
-```bash
-python3 examples.py
-```
-
-### setup.sh
-Automated setup script that:
-- Checks Python/pip installation
-- Installs dependencies
-- Creates .env file from template
-- Creates transcripts directory
-
-Run with:
-```bash
-./setup.sh
-```
-
-## Troubleshooting
-
-### "APIFY_API_TOKEN not found"
-Make sure you've created a `.env` file with your API token.
-
-### "No transcript files found"
-Run `main.py` first to scrape videos, or check that the `transcripts/` directory exists.
-
-### "Error uploading files"
-Check that your Gemini API key is valid and has sufficient quota.
-
-### Rate Limits
-Both APIs have rate limits. If you encounter errors:
-- For Apify: Check your plan limits
-- For Gemini: Wait a few minutes or check your quota
-
-## Cost Considerations
-
-- **Apify**: Free tier includes limited compute units. Check [pricing](https://apify.com/pricing)
-- **Gemini API**: Free tier available with rate limits. Check [pricing](https://ai.google.dev/pricing)
-
-## License
+## Lisans
 
 MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Support
-
-For issues or questions:
-- Check the [Apify documentation](https://docs.apify.com/)
-- Check the [Gemini API documentation](https://ai.google.dev/docs)
-- Open an issue in this repository

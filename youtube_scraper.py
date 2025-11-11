@@ -4,10 +4,17 @@ import re
 from typing import List, Dict, Optional
 from apify_client import ApifyClient
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api._errors import (
+    TranscriptsDisabled,
+    NoTranscriptFound,
+    VideoUnplayable,
+    VideoUnavailable,
+)
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# pylint: disable=redefined-outer-name
 
 
 class YouTubeScraper:
@@ -94,9 +101,17 @@ class YouTubeScraper:
                     videos.append(video_data)
                     print(f"✅ Transcript fetched ({len(video_data['transcript'])} chars)")
                 else:
-                    print(f"⚠️  No transcript available")
-            except Exception as e:
-                print(f"❌ Error: {e}")
+                    print("⚠️  No transcript available")
+            except (ValueError, KeyError, TypeError) as e:
+                print(f"❌ Error processing video: {e}")
+                continue
+            except (ConnectionError, TimeoutError, OSError) as e:
+                # Network-related errors
+                print(f"❌ Network error: {e}")
+                continue
+            except Exception as e:  # noqa: BLE001
+                # Catch any other unexpected errors (API changes, etc.)
+                print(f"❌ Unexpected error: {e}")
                 continue
 
         print(f"\n✅ Successfully scraped {len(videos)} videos with transcripts")
@@ -122,26 +137,30 @@ class YouTubeScraper:
             # Try multiple language options with fallback
             # Priority: English > Turkish > any available language
             transcript_data = None
+            api = YouTubeTranscriptApi()
 
             # Try English first (most common)
             try:
-                transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-            except:
+                fetched = api.fetch(video_id, languages=['en'])
+                transcript_data = fetched.to_raw_data()
+            except (TranscriptsDisabled, NoTranscriptFound):
                 pass
 
             # Try Turkish
             if not transcript_data:
                 try:
-                    transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['tr'])
-                except:
+                    fetched = api.fetch(video_id, languages=['tr'])
+                    transcript_data = fetched.to_raw_data()
+                except (TranscriptsDisabled, NoTranscriptFound):
                     pass
 
             # Try any available language (auto-generated or manual)
             if not transcript_data:
                 try:
                     # This will get the first available transcript
-                    transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
-                except:
+                    fetched = api.fetch(video_id)
+                    transcript_data = fetched.to_raw_data()
+                except (TranscriptsDisabled, NoTranscriptFound):
                     pass
 
             if not transcript_data:
@@ -162,13 +181,37 @@ class YouTubeScraper:
             return video_data
 
         except TranscriptsDisabled:
-            print(f"⚠️  Transcripts disabled for this video")
+            print("⚠️  Transcripts disabled for this video")
             return None
         except NoTranscriptFound:
-            print(f"⚠️  No transcript found for this video")
+            print("⚠️  No transcript found for this video")
             return None
-        except Exception as e:
-            print(f"❌ Unexpected error: {e}")
+        except VideoUnplayable as e:
+            # Handle members-only or restricted videos
+            error_msg = str(e)
+            if "members-only" in error_msg.lower() or "member" in error_msg.lower():
+                print("🔒 Members-only video (transcript not available)")
+            else:
+                print(f"⚠️  Video unplayable: {error_msg[:100]}")
+            return None
+        except VideoUnavailable:
+            print("⚠️  Video unavailable")
+            return None
+        except (ValueError, TypeError, KeyError) as e:
+            print(f"❌ Error processing transcript: {e}")
+            return None
+        except (ConnectionError, TimeoutError, OSError) as e:
+            # Network-related errors
+            print(f"❌ Network error: {e}")
+            return None
+        except Exception as e:  # noqa: BLE001
+            # Catch any other unexpected errors (API changes, etc.)
+            error_msg = str(e)
+            # Check if it's a members-only error in the message
+            if "members-only" in error_msg.lower() or "member" in error_msg.lower():
+                print("🔒 Members-only video (transcript not available)")
+            else:
+                print(f"❌ Unexpected error: {error_msg[:150]}")
             return None
 
     @staticmethod

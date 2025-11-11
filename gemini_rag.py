@@ -103,6 +103,17 @@ Answer the user's question based on the information in the uploaded transcript f
 If the information is not in the transcripts, say so clearly.
 Always cite which video(s) you're referencing when possible.
 
+IMPORTANT: 
+- Respond in the same language as the user's question. If the user asks in Turkish, respond in Turkish. If in English, respond in English.
+- Format your response using Markdown for better readability:
+  * Use **bold** for emphasis
+  * Use *italic* for subtle emphasis
+  * Use bullet points (- or *) for lists
+  * Use numbered lists (1., 2., etc.) for ordered items
+  * Use `code` for technical terms or code snippets
+  * Use ## for section headings if needed
+  * Use > for quotes or important notes
+
 User question: {query}"""
 
             # Send query with uploaded files as context

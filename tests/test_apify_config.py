@@ -2,7 +2,6 @@
 import os
 from apify_client import ApifyClient
 from dotenv import load_dotenv
-import json
 
 load_dotenv()
 
@@ -50,7 +49,7 @@ for config in test_configs:
 
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             print(f"✅ Video: {item.get('title')}")
-            print(f"\n📋 Subtitle-related fields:")
+            print("\n📋 Subtitle-related fields:")
 
             # Check all possible subtitle fields
             subtitle_fields = [
@@ -66,13 +65,16 @@ for config in test_configs:
 
             # Show if text field has content
             if item.get('text'):
-                print(f"\n📝 text field (first 300 chars):")
+                print("\n📝 text field (first 300 chars):")
                 print(f"  {item.get('text')[:300]}...")
 
             break  # Only show first video
 
-    except Exception as e:
+    except (ValueError, KeyError, ConnectionError, TimeoutError) as e:
         print(f"❌ Error: {e}")
+    except Exception as e:  # noqa: BLE001
+        # Catch any other unexpected errors
+        print(f"❌ Unexpected error: {e}")
 
 print(f"\n{'='*80}")
 print("Test complete!")
