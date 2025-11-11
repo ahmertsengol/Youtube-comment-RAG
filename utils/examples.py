@@ -1,4 +1,10 @@
 """Example queries and usage patterns for the YouTube RAG tool."""
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
@@ -75,7 +81,7 @@ def show_examples():
 ## Multiple Sessions
 - Keep transcripts in the `transcripts/` folder
 - Run `python3 chat.py` to query anytime without re-scraping
-- Delete old transcripts with `python3 cleanup.py` before scraping a new channel
+- Delete old transcripts with `python3 utils/cleanup.py` before scraping a new channel
 
 ## Batch Processing
 - Scrape multiple channels (one at a time)

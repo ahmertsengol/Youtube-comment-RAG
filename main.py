@@ -6,6 +6,7 @@ from gemini_rag import GeminiRAG
 from rich.console import Console
 from rich.prompt import Prompt, IntPrompt
 from rich.panel import Panel
+from rich.markdown import Markdown
 
 console = Console()
 
@@ -77,19 +78,36 @@ def main():
                     continue
 
                 response = rag.chat(query)
-                console.print(f"\n[bold green]AI Assistant[/bold green]:\n{response}\n")
+                
+                # Display response in a beautiful panel with markdown support
+                console.print("\n")
+                console.print(Panel(
+                    Markdown(response),
+                    title="[bold green]🤖 AI Assistant[/bold green]",
+                    border_style="green",
+                    padding=(1, 2),
+                    expand=False
+                ))
+                console.print()  # Empty line for spacing
 
             except KeyboardInterrupt:
                 console.print("\n\n[yellow]Interrupted. Exiting...[/yellow]")
                 break
-            except Exception as e:
+            except (ValueError, KeyError, TypeError) as e:
+                console.print(f"\n[red]Error: {str(e)}[/red]\n")
+            except Exception as e:  # noqa: BLE001
+                # Catch any other unexpected errors
                 console.print(f"\n[red]Error: {str(e)}[/red]\n")
 
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Interrupted. Exiting...[/yellow]")
         sys.exit(0)
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, ConnectionError, TimeoutError) as e:
         console.print(f"\n[red]❌ Error: {str(e)}[/red]")
+        sys.exit(1)
+    except Exception as e:  # noqa: BLE001
+        # Catch any other unexpected errors
+        console.print(f"\n[red]❌ Unexpected error: {str(e)}[/red]")
         sys.exit(1)
 
 
