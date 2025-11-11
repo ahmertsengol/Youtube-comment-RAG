@@ -1,57 +1,64 @@
-"""YouTube video transcript scraper using Apify."""
+"""YouTube video transcript scraper using YouTube Transcript API."""
 import os
-import time
 import re
-from typing import List, Dict
+from typing import List, Dict, Optional
 from apify_client import ApifyClient
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 class YouTubeScraper:
-    """Scraper for YouTube video transcripts using Apify."""
+    """Scraper for YouTube video transcripts."""
 
     def __init__(self):
-        """Initialize the Apify client."""
+        """Initialize the scraper."""
+        # Apify is only used for getting video URLs from channels
         api_token = os.getenv("APIFY_API_TOKEN")
-        if not api_token:
-            raise ValueError("APIFY_API_TOKEN not found in environment variables")
-        self.client = ApifyClient(api_token)
+        self.apify_client = ApifyClient(api_token) if api_token else None
 
-    def _get_channel_video_urls(self, channel_url: str, max_videos: int) -> List[str]:
+    def _get_channel_video_urls(self, channel_url: str, max_videos: int) -> List[Dict]:
         """
-        Get video URLs from a YouTube channel.
+        Get video URLs and metadata from a YouTube channel.
 
         Args:
             channel_url: YouTube channel URL
             max_videos: Maximum number of videos to fetch
 
         Returns:
-            List of video URLs
+            List of dictionaries with video metadata
         """
+        if not self.apify_client:
+            raise ValueError("APIFY_API_TOKEN required for channel scraping. Set it in .env file")
+
         print(f"🔍 Fetching video list from channel: {channel_url}")
 
-        # Use streamers/youtube-scraper to get video URLs only
+        # Use streamers/youtube-scraper to get video metadata
         run_input = {
             "startUrls": [{"url": channel_url}],
             "maxResults": max_videos,
-            "scrapeSubtitles": False,  # We don't need subtitles here
+            "scrapeSubtitles": False,
             "scrapeChannelInfo": False,
             "scrapeComments": False,
             "scrapeDescriptions": False,
         }
 
-        run = self.client.actor("streamers/youtube-scraper").call(run_input=run_input)
+        run = self.apify_client.actor("streamers/youtube-scraper").call(run_input=run_input)
 
-        video_urls = []
-        for item in self.client.dataset(run["defaultDatasetId"]).iterate_items():
-            url = item.get("url")
-            if url:
-                video_urls.append(url)
+        videos = []
+        for item in self.apify_client.dataset(run["defaultDatasetId"]).iterate_items():
+            video_info = {
+                "url": item.get("url"),
+                "title": item.get("title", "Unknown Title"),
+                "video_id": item.get("id"),
+            }
+            if video_info["url"]:
+                videos.append(video_info)
 
-        print(f"✅ Found {len(video_urls)} videos")
-        return video_urls
+        print(f"✅ Found {len(videos)} videos")
+        return videos
 
     def scrape_channel(self, channel_url: str, max_videos: int = 10) -> List[Dict]:
         """
@@ -65,18 +72,19 @@ class YouTubeScraper:
             List of video data dictionaries with transcripts
         """
         # Step 1: Get video URLs from channel
-        video_urls = self._get_channel_video_urls(channel_url, max_videos)
+        video_infos = self._get_channel_video_urls(channel_url, max_videos)
 
-        if not video_urls:
+        if not video_infos:
             print("❌ No videos found in channel")
             return []
 
         # Step 2: Get transcripts for each video
-        print(f"\n📝 Fetching transcripts for {len(video_urls)} videos...")
+        print(f"\n📝 Fetching transcripts for {len(video_infos)} videos...")
         videos = []
 
-        for i, video_url in enumerate(video_urls, 1):
-            print(f"\n[{i}/{len(video_urls)}] Processing: {video_url}")
+        for i, video_info in enumerate(video_infos, 1):
+            video_url = video_info["url"]
+            print(f"\n[{i}/{len(video_infos)}] Processing: {video_info['title']}")
 
             try:
                 video_data = self._scrape_single_video(video_url)
@@ -89,50 +97,112 @@ class YouTubeScraper:
                 print(f"❌ Error: {e}")
                 continue
 
-            # Small delay to avoid rate limiting
-            if i < len(video_urls):
-                time.sleep(1)
-
         print(f"\n✅ Successfully scraped {len(videos)} videos with transcripts")
         return videos
 
-    def _scrape_single_video(self, video_url: str) -> Dict:
+    def _scrape_single_video(self, video_url: str) -> Optional[Dict]:
         """
-        Scrape transcript from a single YouTube video.
+        Scrape transcript from a single YouTube video using YouTube Transcript API.
 
         Args:
             video_url: YouTube video URL
 
         Returns:
-            Video data dictionary with transcript
+            Video data dictionary with transcript, or None if no transcript available
         """
         # Extract video ID from URL
-        video_id_match = re.search(r'(?:v=|\/)([\w-]{11})', video_url)
-        video_id = video_id_match.group(1) if video_id_match else None
+        video_id = self._extract_video_id(video_url)
+        if not video_id:
+            print(f"❌ Could not extract video ID from URL: {video_url}")
+            return None
 
-        # Use dedicated transcript scraper
-        run_input = {
-            "videoUrls": [video_url],
-            "language": "en",  # Primary language (will fallback to auto-generated if not available)
-        }
+        try:
+            # Try to get transcript (priority: manual > auto-generated)
+            # Will try languages: English, Turkish, and any other available
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
 
-        run = self.client.actor("knowbaseai/youtube-transcript-extractor").call(run_input=run_input)
+            # Try to get manual transcript first (preferred languages)
+            transcript = None
+            for lang_code in ['en', 'tr']:
+                try:
+                    transcript = transcript_list.find_manually_created_transcript([lang_code])
+                    break
+                except:
+                    continue
 
-        # Fetch transcript from results
-        for item in self.client.dataset(run["defaultDatasetId"]).iterate_items():
-            transcript = item.get("transcript", "")
+            # If no manual transcript, try auto-generated
+            if not transcript:
+                try:
+                    transcript = transcript_list.find_generated_transcript(['en', 'tr'])
+                except:
+                    # Last resort: get any available transcript
+                    try:
+                        available = list(transcript_list)
+                        if available:
+                            transcript = available[0]
+                    except:
+                        pass
 
-            # Skip if no transcript
-            if not transcript or transcript.strip() == "":
+            if not transcript:
                 return None
 
+            # Fetch the actual transcript data
+            transcript_data = transcript.fetch()
+
+            # Combine all text segments into one string
+            full_text = " ".join([entry['text'] for entry in transcript_data])
+
+            if not full_text.strip():
+                return None
+
+            # Get video title using the transcript API
+            video_title = "Unknown Title"
+            try:
+                # The transcript object might have video info
+                video_title = transcript.video_id  # This will be the video ID
+                # We'll use the video ID as fallback, title comes from Apify
+            except:
+                pass
+
             video_data = {
-                "video_id": video_id or item.get("videoId", "unknown"),
-                "title": item.get("title", "Unknown Title"),
+                "video_id": video_id,
+                "title": video_title,
                 "url": video_url,
-                "transcript": transcript,
+                "transcript": full_text,
             }
             return video_data
+
+        except TranscriptsDisabled:
+            print(f"⚠️  Transcripts disabled for this video")
+            return None
+        except NoTranscriptFound:
+            print(f"⚠️  No transcript found for this video")
+            return None
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+            return None
+
+    @staticmethod
+    def _extract_video_id(video_url: str) -> Optional[str]:
+        """
+        Extract video ID from YouTube URL.
+
+        Args:
+            video_url: YouTube video URL
+
+        Returns:
+            Video ID or None if not found
+        """
+        patterns = [
+            r'(?:v=|\/)([\w-]{11})',  # Standard watch URL
+            r'youtu\.be\/([\w-]{11})',  # Short URL
+            r'embed\/([\w-]{11})',  # Embed URL
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, video_url)
+            if match:
+                return match.group(1)
 
         return None
 

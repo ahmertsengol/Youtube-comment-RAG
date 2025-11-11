@@ -1,19 +1,9 @@
 """Quick test script for the new transcript scraper."""
-import os
 from youtube_scraper import YouTubeScraper
-from dotenv import load_dotenv
 
-load_dotenv()
-
-# Check if API token exists
-if not os.getenv("APIFY_API_TOKEN"):
-    print("❌ APIFY_API_TOKEN not found in .env file")
-    print("Please create a .env file with your Apify API token:")
-    print("APIFY_API_TOKEN=your_token_here")
-    exit(1)
-
-print("🧪 Testing YouTube Transcript Scraper\n")
+print("🧪 Testing YouTube Transcript Scraper")
 print("=" * 80)
+print("ℹ️  This test uses YouTube's FREE transcript API - no Apify needed!\n")
 
 # Test with a single video
 test_video_url = "https://www.youtube.com/watch?v=89CQRxq0YSg"
@@ -40,9 +30,12 @@ if video_data:
 else:
     print("\n❌ FAILED: No transcript found")
     print("This video might not have subtitles/captions available.")
+    print("Try a different video URL.")
 
 print(f"\n{'=' * 80}")
 print("\n🎯 Next steps:")
-print("1. If test passed: Run main.py to scrape a full channel")
-print("2. If test failed: Check your APIFY_API_TOKEN and try a different video")
+print("1. If test passed: Install youtube-transcript-api with:")
+print("   pip install youtube-transcript-api")
+print("2. For channel scraping, you still need APIFY_API_TOKEN in .env")
+print("3. Run main.py to scrape a full channel")
 print(f"\n{'=' * 80}")
