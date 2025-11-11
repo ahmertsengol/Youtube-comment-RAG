@@ -77,6 +77,8 @@ python -m tests.test_transcript
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
+For complete license and legal information including third-party licenses, see [LICENSE_INFO.md](LICENSE_INFO.md).
+
 ## Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

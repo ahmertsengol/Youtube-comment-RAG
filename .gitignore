@@ -115,6 +115,10 @@ apify_storage/
 *.sqlite
 *.sqlite3
 
+# GitHub (keep templates, ignore setup guides)
+.github/GITHUB_SETUP.md
+.github/TOPICS.md
+
 # Documentation builds
 docs/_build/
 site/
