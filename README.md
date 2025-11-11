@@ -101,51 +101,6 @@ veya
 cd tests && python test_transcript.py && cd ..
 ```
 
-## Proje Yapısı
-
-```
-Youtube-comment-RAG/
-├── main.py                 # Ana orkestrasyon scripti
-├── chat.py                 # Bağımsız sohbet arayüzü
-├── youtube_scraper.py     # YouTube transcript çekme modülü
-├── gemini_rag.py          # Gemini API RAG implementasyonu
-├── requirements.txt        # Python bağımlılıkları
-├── setup.sh               # Otomatik kurulum scripti
-├── .env.example           # Ortam değişkenleri şablonu
-├── transcripts/           # Kaydedilen transcript'ler (otomatik oluşturulur)
-├── tests/                 # Test dosyaları
-│   ├── test_transcript.py
-│   ├── test_imports.py
-│   └── test_apify_config.py
-├── utils/                 # Yardımcı scriptler
-│   ├── cleanup.py
-│   ├── examples.py
-│   ├── debug_apify.py
-│   └── list_gemini_models.py
-└── docs/                  # Dokümantasyon
-    ├── KURULUM.md
-    ├── QUICKSTART.md
-    └── PR_DETAILS.md
-```
-
-## Nasıl Çalışır
-
-1. **Video Çekme**: Apify kullanarak YouTube kanalından video listesi çekilir
-2. **Transcript Çekme**: Her video için ücretsiz YouTube Transcript API kullanılarak transcript çekilir
-3. **Kaydetme**: Transcript'ler metadata ile birlikte `transcripts/` klasörüne kaydedilir
-4. **İndeksleme**: Transcript'ler Gemini API'ye yüklenir ve AI destekli arama için hazırlanır
-5. **Sohbet**: İnteraktif arayüz ile video içeriği hakkında sorular sorabilirsiniz
-
-## Örnek Sorular
-
-Transcript'ler indekslendikten sonra şu tür sorular sorabilirsiniz:
-
-- "Bu videolarda hangi ana konular işleniyor?"
-- "[Belirli bir konu] hakkında ne söylenmiş?"
-- "[Anahtar kelime] hangi videolarda geçiyor?"
-- "Farklı videolarda bahsedilen yaklaşımları karşılaştır"
-- "Son videoda ne anlatılıyor?"
-
 ## Sorun Giderme
 
 ### "APIFY_API_TOKEN not found" hatası
@@ -167,19 +122,6 @@ Her iki API'nin de rate limit'i vardır. Hata alırsanız:
 - **Apify**: Ücretsiz tier sınırlı compute unit içerir. Fiyatlandırma: https://apify.com/pricing
 - **Gemini API**: Rate limit'li ücretsiz tier mevcuttur. Fiyatlandırma: https://ai.google.dev/pricing
 - **YouTube Transcript API**: Tamamen ücretsiz
-
-## Modüller
-
-### youtube_scraper.py
-- `YouTubeScraper`: YouTube kanallarından video çekme sınıfı
-- `scrape_channel()`: Kanaldan video çekme
-- `save_transcripts()`: Transcript'leri dosyalara kaydetme
-
-### gemini_rag.py
-- `GeminiRAG`: Gemini API kullanan RAG implementasyonu
-- `upload_files()`: Transcript'leri Gemini'ye yükleme
-- `chat()`: RAG sistemini sorgulama
-- `delete_all_files()`: Yüklenen dosyaları temizleme
 
 ## Lisans
 
