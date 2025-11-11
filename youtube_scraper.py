@@ -1,7 +1,6 @@
-"""YouTube video transcript scraper using Apify."""
+"""YouTube video scraper using Apify."""
 import os
 import time
-import re
 from typing import List, Dict
 from apify_client import ApifyClient
 from dotenv import load_dotenv
@@ -10,7 +9,7 @@ load_dotenv()
 
 
 class YouTubeScraper:
-    """Scraper for YouTube video transcripts using Apify."""
+    """Scraper for YouTube channel videos using Apify."""
 
     def __init__(self):
         """Initialize the Apify client."""
@@ -19,122 +18,54 @@ class YouTubeScraper:
             raise ValueError("APIFY_API_TOKEN not found in environment variables")
         self.client = ApifyClient(api_token)
 
-    def _get_channel_video_urls(self, channel_url: str, max_videos: int) -> List[str]:
-        """
-        Get video URLs from a YouTube channel.
-
-        Args:
-            channel_url: YouTube channel URL
-            max_videos: Maximum number of videos to fetch
-
-        Returns:
-            List of video URLs
-        """
-        print(f"🔍 Fetching video list from channel: {channel_url}")
-
-        # Use streamers/youtube-scraper to get video URLs only
-        run_input = {
-            "startUrls": [{"url": channel_url}],
-            "maxResults": max_videos,
-            "scrapeSubtitles": False,  # We don't need subtitles here
-            "scrapeChannelInfo": False,
-            "scrapeComments": False,
-            "scrapeDescriptions": False,
-        }
-
-        run = self.client.actor("streamers/youtube-scraper").call(run_input=run_input)
-
-        video_urls = []
-        for item in self.client.dataset(run["defaultDatasetId"]).iterate_items():
-            url = item.get("url")
-            if url:
-                video_urls.append(url)
-
-        print(f"✅ Found {len(video_urls)} videos")
-        return video_urls
-
     def scrape_channel(self, channel_url: str, max_videos: int = 10) -> List[Dict]:
         """
-        Scrape video transcripts from a YouTube channel.
+        Scrape videos from a YouTube channel.
 
         Args:
             channel_url: YouTube channel URL
             max_videos: Maximum number of videos to scrape (newest first)
 
         Returns:
-            List of video data dictionaries with transcripts
+            List of video data dictionaries
         """
-        # Step 1: Get video URLs from channel
-        video_urls = self._get_channel_video_urls(channel_url, max_videos)
+        print(f"🔍 Scraping {max_videos} videos from channel: {channel_url}")
 
-        if not video_urls:
-            print("❌ No videos found in channel")
-            return []
-
-        # Step 2: Get transcripts for each video
-        print(f"\n📝 Fetching transcripts for {len(video_urls)} videos...")
-        videos = []
-
-        for i, video_url in enumerate(video_urls, 1):
-            print(f"\n[{i}/{len(video_urls)}] Processing: {video_url}")
-
-            try:
-                video_data = self._scrape_single_video(video_url)
-                if video_data:
-                    videos.append(video_data)
-                    print(f"✅ Transcript fetched ({len(video_data['transcript'])} chars)")
-                else:
-                    print(f"⚠️  No transcript available")
-            except Exception as e:
-                print(f"❌ Error: {e}")
-                continue
-
-            # Small delay to avoid rate limiting
-            if i < len(video_urls):
-                time.sleep(1)
-
-        print(f"\n✅ Successfully scraped {len(videos)} videos with transcripts")
-        return videos
-
-    def _scrape_single_video(self, video_url: str) -> Dict:
-        """
-        Scrape transcript from a single YouTube video.
-
-        Args:
-            video_url: YouTube video URL
-
-        Returns:
-            Video data dictionary with transcript
-        """
-        # Extract video ID from URL
-        video_id_match = re.search(r'(?:v=|\/)([\w-]{11})', video_url)
-        video_id = video_id_match.group(1) if video_id_match else None
-
-        # Use dedicated transcript scraper
+        # Prepare the Actor input
         run_input = {
-            "videoUrls": [video_url],
-            "language": "en",  # Primary language (will fallback to auto-generated if not available)
+            "startUrls": [{"url": channel_url}],
+            "maxResults": max_videos,
+            "scrapeSubtitles": True,  # Get video transcripts
+            "scrapeChannelInfo": False,
+            "scrapeComments": False,
+            "scrapeDescriptions": True,
         }
 
-        run = self.client.actor("knowbaseai/youtube-transcript-extractor").call(run_input=run_input)
+        # Run the Actor and wait for it to finish
+        print("⏳ Running Apify YouTube scraper...")
+        run = self.client.actor("streamers/youtube-scraper").call(run_input=run_input)
 
-        # Fetch transcript from results
+        # Fetch Actor results from the run's dataset
+        videos = []
+        print("📥 Fetching results...")
         for item in self.client.dataset(run["defaultDatasetId"]).iterate_items():
-            transcript = item.get("transcript", "")
-
-            # Skip if no transcript
-            if not transcript or transcript.strip() == "":
-                return None
+            # Get subtitles, if not available use text (description content)
+            subtitles = item.get("subtitles") or item.get("text") or ""
 
             video_data = {
-                "video_id": video_id or item.get("videoId", "unknown"),
-                "title": item.get("title", "Unknown Title"),
-                "url": video_url,
-                "transcript": transcript,
+                "video_id": item.get("id"),
+                "title": item.get("title"),
+                "description": item.get("text", ""),  # Use 'text' field for full description
+                "url": item.get("url"),
+                "published_at": item.get("date"),  # Changed from publishedAt to date
+                "duration": item.get("duration"),
+                "view_count": item.get("viewCount"),
+                "subtitles": subtitles,
             }
-            return video_data
+            videos.append(video_data)
 
-        return None
+        print(f"✅ Successfully scraped {len(videos)} videos")
+        return videos
 
     def save_transcripts(self, videos: List[Dict], output_dir: str = "transcripts") -> List[str]:
         """
@@ -153,17 +84,22 @@ class YouTubeScraper:
         for video in videos:
             video_id = video["video_id"]
             title = video["title"]
-            transcript = video["transcript"]
+            subtitles = video["subtitles"]
 
             # Create filename from video ID
             filename = f"{output_dir}/{video_id}.txt"
 
-            # Write transcript with minimal metadata
+            # Write transcript with metadata
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(f"Title: {title}\n")
                 f.write(f"URL: {video['url']}\n")
+                f.write(f"Published: {video.get('published_at', 'Unknown')}\n")
+                f.write(f"Duration: {video.get('duration', 'Unknown')}\n")
+                f.write(f"Views: {video.get('view_count', 'Unknown')}\n")
                 f.write(f"\n{'='*80}\n\n")
-                f.write(f"Transcript:\n{transcript}\n")
+                f.write(f"Description:\n{video['description']}\n\n")
+                f.write(f"{'='*80}\n\n")
+                f.write(f"Transcript:\n{subtitles}\n")
 
             file_paths.append(filename)
             print(f"💾 Saved: {filename}")
