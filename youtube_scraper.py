@@ -89,6 +89,8 @@ class YouTubeScraper:
             try:
                 video_data = self._scrape_single_video(video_url)
                 if video_data:
+                    # Update title from Apify metadata
+                    video_data['title'] = video_info['title']
                     videos.append(video_data)
                     print(f"✅ Transcript fetched ({len(video_data['transcript'])} chars)")
                 else:
@@ -117,37 +119,33 @@ class YouTubeScraper:
             return None
 
         try:
-            # Try to get transcript (priority: manual > auto-generated)
-            # Will try languages: English, Turkish, and any other available
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            # Try multiple language options with fallback
+            # Priority: English > Turkish > any available language
+            transcript_data = None
 
-            # Try to get manual transcript first (preferred languages)
-            transcript = None
-            for lang_code in ['en', 'tr']:
+            # Try English first (most common)
+            try:
+                transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            except:
+                pass
+
+            # Try Turkish
+            if not transcript_data:
                 try:
-                    transcript = transcript_list.find_manually_created_transcript([lang_code])
-                    break
+                    transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['tr'])
                 except:
-                    continue
+                    pass
 
-            # If no manual transcript, try auto-generated
-            if not transcript:
+            # Try any available language (auto-generated or manual)
+            if not transcript_data:
                 try:
-                    transcript = transcript_list.find_generated_transcript(['en', 'tr'])
+                    # This will get the first available transcript
+                    transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
                 except:
-                    # Last resort: get any available transcript
-                    try:
-                        available = list(transcript_list)
-                        if available:
-                            transcript = available[0]
-                    except:
-                        pass
+                    pass
 
-            if not transcript:
+            if not transcript_data:
                 return None
-
-            # Fetch the actual transcript data
-            transcript_data = transcript.fetch()
 
             # Combine all text segments into one string
             full_text = " ".join([entry['text'] for entry in transcript_data])
@@ -155,18 +153,9 @@ class YouTubeScraper:
             if not full_text.strip():
                 return None
 
-            # Get video title using the transcript API
-            video_title = "Unknown Title"
-            try:
-                # The transcript object might have video info
-                video_title = transcript.video_id  # This will be the video ID
-                # We'll use the video ID as fallback, title comes from Apify
-            except:
-                pass
-
             video_data = {
                 "video_id": video_id,
-                "title": video_title,
+                "title": "Unknown Title",  # Title will be set from Apify data in scrape_channel
                 "url": video_url,
                 "transcript": full_text,
             }
